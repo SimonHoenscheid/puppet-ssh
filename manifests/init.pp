@@ -98,18 +98,23 @@
 #   Use issue_net header
 #
 class ssh (
-  Hash    $server_options          = {},
-  Hash    $server_match_block      = {},
-  Hash    $client_options          = {},
-  Hash    $users_client_options    = {},
-  String  $version                 = 'present',
-  Boolean $storeconfigs_enabled    = true,
-  Boolean $validate_sshd_file      = $ssh::params::validate_sshd_file,
-  Boolean $use_augeas              = false,
-  Array   $server_options_absent   = [],
-  Array   $client_options_absent   = [],
-  Boolean $use_issue_net           = false,
-  Boolean $purge_unmanaged_sshkeys = true,
+  # TODO: Puppet is unhappy with the Variant
+  Hash[String[1],Hash[String[1],NotUndef]] $server_instances = {},
+  Hash    $server_options                                    = {},
+  Hash    $server_match_block                                = {},
+  Hash    $client_options                                    = {},
+  Hash    $users_client_options                              = {},
+  String  $version                                           = 'present',
+  Boolean $storeconfigs_enabled                              = true,
+  Boolean $validate_sshd_file                                = $ssh::params::validate_sshd_file,
+  Boolean $use_augeas                                        = false,
+  Array   $server_options_absent                             = [],
+  Array   $client_options_absent                             = [],
+  Boolean $use_issue_net                                     = false,
+  Boolean $purge_unmanaged_sshkeys                           = true,
+  Stdlib::Absolutepath $sshd_dir                             = $ssh::params::sshd_dir,
+  Stdlib::Absolutepath $sshd_binary                          = $ssh::params::sshd_binary,
+  Optional[Stdlib::Absolutepath] $sshd_environments_file     = $ssh::params::sshd_environments_file,
 ) inherits ssh::params {
   # Merge hashes from multiple layer of hierarchy in hiera
   $hiera_server_options = lookup("${module_name}::server_options", Optional[Hash], 'deep', {})
@@ -138,6 +143,12 @@ class ssh (
     options              => $fin_client_options,
     use_augeas           => $use_augeas,
     options_absent       => $client_options_absent,
+  }
+
+  $server_instances.each | String $instance_name, Hash $instance_settings | {
+    ssh::server::instances { $instance_name:
+      * => $instance_settings,
+    }
   }
 
   # If host keys are being managed, optionally purge unmanaged ones as well.
