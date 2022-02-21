@@ -98,6 +98,7 @@
 #   Use issue_net header
 #
 class ssh (
+  Hash    $server_instances        = {},
   Hash    $server_options          = {},
   Hash    $server_match_block      = {},
   Hash    $client_options          = {},
@@ -138,6 +139,12 @@ class ssh (
     options              => $fin_client_options,
     use_augeas           => $use_augeas,
     options_absent       => $client_options_absent,
+  }
+
+  $server_instances.each | String $instance_name, Hash $instance_settings | {
+    ssh::server::instances { $instance_name:
+      * => $instance_settings,
+    }
   }
 
   # If host keys are being managed, optionally purge unmanaged ones as well.
